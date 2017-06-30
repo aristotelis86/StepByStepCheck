@@ -1,5 +1,6 @@
 /*******************************************************************
 // Testing Particle Class  //
+// The particles are expected to be positioned exactly where they are asked 
 *******************************************************************/
 
 
@@ -25,7 +26,7 @@ void setup() {
   
   p = new Particle[N];
   for (int i = 0; i < N; i++) {
-    p[i] = new Particle(random(xpos), random(ypos), M, 2*M);
+    p[i] = new Particle(xpos, ypos+i*20, M, 2*M);
   }
   
   
