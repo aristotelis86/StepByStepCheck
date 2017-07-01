@@ -1,6 +1,7 @@
 /*******************************************************************
 // Testing Spring Class  //
 // The proper application of forces and stretching calculation are tested. 
+// - The test is successful. Some numerical/rounding errors occur in the force value for random alignment (not x- or y-axis) 
 *******************************************************************/
 
 
@@ -38,7 +39,8 @@ void setup() {
   
   // Two particles with a distance of 100 units (pixels)
   p[0] = new Particle(xpos, ypos, M, 10);
-  p[1] = new Particle(xpos+sqrt(2)*50, ypos+sqrt(2)*50, M, 10);
+  //p[1] = new Particle(xpos+sqrt(2)*50, ypos+sqrt(2)*50, M, 10);
+  p[1] = new Particle(xpos+100, ypos, M, 10);
   
   s = new Spring(p[0], p[1], restLength, stiffness);
   
@@ -71,19 +73,21 @@ void draw() {
   for (Particle P : p) P.clearForce();
   s.applyAllForces();
   
-  x[0] = xpos + sqrt(2)*10*sin(5*PI*t);  
-  y[0] = ypos + sqrt(2)*10*sin(5*PI*t);
+  println(s.getStretch());
+  //x[0] = xpos + sqrt(2)*10*sin(5*PI*t);  
+  //y[0] = ypos + sqrt(2)*10*sin(5*PI*t);
   
-  x[1] = xpos+sqrt(2)*50 - sqrt(2)*10*sin(5*PI*t);  
-  y[1] = ypos+sqrt(2)*50 - sqrt(2)*10*sin(5*PI*t);
+  x[1] = xpos+200; //+sqrt(2)*50 - sqrt(2)*10*sin(5*PI*t);  
+  y[1] = ypos+100;//sqrt(2)*50 - sqrt(2)*10*sin(5*PI*t);
   
-  p[0].updatePosition(x[0],y[0]);
+  //p[0].updatePosition(x[0],y[0]);
   p[1].updatePosition(x[1],y[1]);
     
   //  vx[j] = 20*cos(2*PI*t);  
   //  vy[j] = 10*cos(2*PI*t);
   //  p[j].updateVelocity(vx[j],vy[j]);
   //}
+  
   
   t += dt;
   noLoop();

@@ -43,8 +43,8 @@ class Spring {
   
   // Get the stretch of the spring
   float getStretch() {
-    PVector Tension = PVector.sub(p1.position, p2.position);
-    float stretch = Tension.mag();
+    PVector SpringDir = PVector.sub(p1.position, p2.position);
+    float stretch = SpringDir.mag();
     stretch -= restLength;
     
     return stretch;
