@@ -1,8 +1,7 @@
 ///*******************************************************************
 //// Testing Particle Class  //
-//// The particles are expected to be positioned exactly where they are asked
-//// - Constructor checked
-//// - Display() checked
+//// The forces methods are tested here
+//// - Application of forces is successful, the accuracy of the numerical system tends to be 1e-5
 //*******************************************************************/
 
 
@@ -19,27 +18,27 @@
 
 
 //Particle [] p;
-//PrintWriter outputPos; // declare output file for positions
-//PrintWriter outputPosOLD; // declare output file for positions
+//PrintWriter outputForce; // declare output file for positions
+
+//PVector gravity = new PVector(0,10);
+//PVector [] pressure; 
+
 
 ////--------------------------- Setup Section ---------------------------//
 //void setup() {
 //  size(800, 600); // window size
+  
+//  pressure = new PVector[N];
   
 //  p = new Particle[N];
 //  for (int i = 0; i < N; i++) {
 //    p[i] = new Particle(xpos, ypos+i*20, M, 2*M);
 //  }
   
+//  outputForce = createWriter("forces.txt");
+//  outputForce.println("=========== Forces ==========");
+//  outputForce.println("Mass: "+M+" Points: "+N);
   
-//  outputPos = createWriter("positions.txt");
-//  outputPos.println("=========== Positions ==========");
-//  outputPos.println("Mass: "+M+" Points: "+N);
-  
-//  outputPosOLD = createWriter("positionsOLD.txt");
-//  outputPosOLD.println("=========== Positions OLD ==========");
-//  outputPosOLD.println("Mass: "+M+" Points: "+N);
-
 //} // end of setup
 
 
@@ -54,12 +53,21 @@
 //  for (Particle PP : p) PP.display();
   
 //  // Write info
-//  outputPos.println("============= t = "+t+" ================");
-//  outputPosOLD.println("============= t = "+t+" ================");
-//  for (Particle PP : p) {
-//    outputPos.println(PP.position.x + " " + PP.position.y);
-//    outputPosOLD.println(PP.positionOld.x + " " + PP.positionOld.y);
+//  Write_Info();
+  
+  
+  
+//  // Update
+//  for (int j = 0; j < N; j++) {
+//    pressure[j] = new PVector(sin(2*PI*t), cos(2*PI*t));
+    
+//    PVector F = PVector.add(PVector.mult(gravity,p[j].mass), pressure[j]);
+    
+//    p[j].clearForce();
+    
+//    p[j].applyForce(F);
 //  }
+  
   
 //  t += dt; // increment time
 //  noLoop();
@@ -75,14 +83,20 @@
 //  noLoop();
 //}
 
+//// Write information to files
+//void Write_Info() {
+//  outputForce.println("============= t = "+t+" ================");
+  
+//  for (Particle PP : p) {
+//    outputForce.println(PP.force.x + " " + PP.force.y);
+//  }
+//}
+
 //// Gracefully terminate writing...
 //void keyPressed() {
   
-//  outputPos.flush(); // Writes the remaining data to the file
-//  outputPos.close(); // Finishes the file
-  
-//  outputPosOLD.flush(); // Writes the remaining data to the file
-//  outputPosOLD.close(); // Finishes the file
+//  outputForce.flush(); // Writes the remaining data to the file
+//  outputForce.close(); // Finishes the file
   
 //  exit(); // Stops the program 
 //}

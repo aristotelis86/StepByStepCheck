@@ -1,65 +1,51 @@
 /*******************************************************************
 // Testing Particle Class  //
-// The particles are expected to be positioned exactly where they are asked 
+// Distance function test. Particles report their distance from other particles considering their radius.
+// The test is successful in general. The only problem is when asked to compare against itself, where a negative value is reported, indicating collision.
 *******************************************************************/
 
 
 //--------------------- INPUTS Section ---------------------------//
 
-float M = 5; // Mass of particle
-int N = 6; // number of particles
-float xpos = 400; // x-location of leading edge
-float ypos = 30; // y-location of leading edge
 
-float t = 0; // timer
-float dt = 0.1; // time step size
 //--------------------- END of INPUTS Section ---------------------------//
 
 
-Particle [] p;
-PrintWriter outputPos; // declare output file for positions
-PrintWriter outputPosOLD; // declare output file for positions
+Particle p1, p2, p3;
 
 //--------------------------- Setup Section ---------------------------//
 void setup() {
   size(800, 600); // window size
   
-  p = new Particle[N];
-  for (int i = 0; i < N; i++) {
-    p[i] = new Particle(xpos, ypos+i*20, M, 2*M);
-  }
+  p1 = new Particle(400, 100, 10, 10);
+  p2 = new Particle(450, 100+sqrt(3)*50, 10, 10);
+  p3 = new Particle(350, 100+sqrt(3)*50, 10, 10);
   
   
-  outputPos = createWriter("positions.txt");
-  outputPos.println("=========== Positions ==========");
-  outputPos.println("Mass: "+M+" Points: "+N);
-  
-  outputPosOLD = createWriter("positionsOLD.txt");
-  outputPosOLD.println("=========== Positions OLD ==========");
-  outputPosOLD.println("Mass: "+M+" Points: "+N);
-
 } // end of setup
 
 
 //--------------------------- Draw Section ---------------------------//
 void draw() {
   background(25); // color of background
-  fill(0, 225, 225); // color of text for timer
-  textSize(32); // text size of timer
-  text(t, 10, 30); // position of timer
   
   // Display
-  for (Particle PP : p) PP.display();
+  p1.display();
+  p2.display();
+  p3.display();
   
   // Write info
-  outputPos.println("============= t = "+t+" ================");
-  outputPosOLD.println("============= t = "+t+" ================");
-  for (Particle PP : p) {
-    outputPos.println(PP.position.x + " " + PP.position.y);
-    outputPosOLD.println(PP.positionOld.x + " " + PP.positionOld.y);
-  }
+  println("p1->p2: "+p1.distance2point(p2));
+  println("p1->p3: "+p1.distance2point(p3));
   
-  t += dt; // increment time
+  println("p2->p1: "+p2.distance2point(p1));
+  println("p2->p3: "+p2.distance2point(p3));
+  
+  println("p3->p2: "+p3.distance2point(p2));
+  println("p3->p1: "+p3.distance2point(p1));
+  
+  println("p1->p1: "+p1.distance2point(p1));
+  
   noLoop();
 } // end Draw()
 
@@ -71,16 +57,4 @@ void mousePressed() {
 
 void mouseReleased() {
   noLoop();
-}
-
-// Gracefully terminate writing...
-void keyPressed() {
-  
-  outputPos.flush(); // Writes the remaining data to the file
-  outputPos.close(); // Finishes the file
-  
-  outputPosOLD.flush(); // Writes the remaining data to the file
-  outputPosOLD.close(); // Finishes the file
-  
-  exit(); // Stops the program 
 }

@@ -6,7 +6,6 @@ class Particle {
   PVector velocity;
   PVector velocityOld;
   PVector force;
-  PVector extraForce;
   float mass;
   
   // Display
@@ -20,7 +19,6 @@ class Particle {
     position = new PVector(tempX, tempY);
     velocity = new PVector(0, 0);
     force = new PVector(0, 0);
-    extraForce = new PVector(0, 0);
     mass = m;
     
     fixed = false;
@@ -52,29 +50,9 @@ class Particle {
     force.mult(0);
   }
   
-  // Clear any extra forces acting on the particle
-  void clearExtraForce() {
-    extraForce.mult(0);
-  }
-  
   // Accumulate all the forces acting on the particle
   void applyForce(PVector FF) {
     force.add(FF);
-  }
-  
-  // Add the extraForce on the existing force variable
-  void applyExtraForce() {
-    force.add(extraForce);
-  }
-  
-  // Add viscous damping force (probably not necessary)
-  void addDamping(float d) {
-    PVector Temp = velocity.copy();
-    float velo = Temp.mag();
-    Temp.normalize();
-    
-    Temp.mult(-d*velo);
-    force.add(Temp);
   }
   
   // Display the particle
