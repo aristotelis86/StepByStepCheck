@@ -1,3 +1,7 @@
+//==================== Dashpot Class ==================//
+
+//************ Depends on Particle Class *************//
+
 class Dashpot {
   
   //=================== Attributes ==================//
