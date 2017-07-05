@@ -8,13 +8,24 @@ class CollisionSolver {
   int N, Ns, NFil;
   int [] NMass, NSpring;
   FlexibleSheet FSheet;
-  float [] xold, yold, vxold, vyold;
   
   ArrayList<Particle> ListMass = new ArrayList<Particle>();
   ArrayList<Spring> ListSpring = new ArrayList<Spring>();
   
   Particle [] LocalMass;
   Spring [] LocalSpring;
+  
+  ArrayList<Particle> NBoundPointCol; // For point-boundary collisions
+  ArrayList<Particle> SBoundPointCol; // For point-boundary collisions
+  ArrayList<Particle> WBoundPointCol; // For point-boundary collisions
+  ArrayList<Particle> EBoundPointCol; // For point-boundary collisions
+  
+  ArrayList<Particle> PointACol; // For point-point collisions
+  ArrayList<Particle> PointBCol; // For point-point collisions
+  
+  ArrayList<Particle> PointCol; // For point-edge collisions
+  ArrayList<Spring> SpringCol;  // For point-edge collisions
+  
   
   //================ Constructor ================//
   CollisionSolver(FlexibleSheet filament_) { // single Sheet
@@ -29,11 +40,17 @@ class CollisionSolver {
     LocalMass = FSheet.prtcl;
     LocalSpring = FSheet.springs;
     
-    // For storing old configuration of filament
-    xold = new float[N]; 
-    yold = new float[N];
-    vxold = new float[N]; 
-    vyold = new float[N];    
+    NBoundPointCol = new ArrayList<Particle>();
+    SBoundPointCol = new ArrayList<Particle>();
+    WBoundPointCol = new ArrayList<Particle>();
+    EBoundPointCol = new ArrayList<Particle>();
+    
+    PointACol = new ArrayList<Particle>();
+    PointBCol = new ArrayList<Particle>();
+    
+    PointCol = new ArrayList<Particle>();
+    SpringCol = new ArrayList<Spring>();
+        
   } // end of constructor #1
   
   CollisionSolver(FlexibleSheet [] filament_) { // multiple sheets
@@ -69,154 +86,84 @@ class CollisionSolver {
     for (int i = 0; i < N; i++) LocalMass[i] = ListMass.get(i);
     for (int i = 0; i < Ns; i++) LocalSpring[i] = ListSpring.get(i);
     
+    NBoundPointCol = new ArrayList<Particle>();
+    SBoundPointCol = new ArrayList<Particle>();
+    WBoundPointCol = new ArrayList<Particle>();
+    EBoundPointCol = new ArrayList<Particle>();
     
-    // For storing old configuration of sheet
-    xold = new float[N]; 
-    yold = new float[N];
-    vxold = new float[N]; 
-    vyold = new float[N];
+    PointACol = new ArrayList<Particle>();
+    PointBCol = new ArrayList<Particle>();
+    
+    PointCol = new ArrayList<Particle>();
+    SpringCol = new ArrayList<Spring>();
+    
   } // end of constructor #2
   
   
   //======================== Methods ===========================//
   
-  // Collision with boundaries of simulation
-  void Boundary_collisions() {
-    float coll_rad;
+  // Master Method - General Handling
+  void SolveCollisions() {
+    int collisionFlag = 1;
+    int pbFlag; // point-boundary collision counter
+    int ppFlag; // point-point collision counter
+    int peFlag; // point-edge collision counter
     
-    for (Particle m : LocalMass) {
-      coll_rad = m.diameter/2;
-      if (m.position.x < coll_rad) {
-        if (m.velocity.x > 0.01) {
-          m.updatePosition(coll_rad, m.position.y);
-          m.updateVelocity((-1)*m.velocity.x, m.velocity.y);
-          m.updatePositionOLD();
-          m.updateVelocityOLD();
-        }
-        else {
-          m.updatePosition(coll_rad, m.position.y);
-          m.updateVelocity(0, m.velocity.y);
-          m.updatePositionOLD();
-          m.updateVelocityOLD();
-        }
-          
-      } 
-      else if (m.position.x > width - coll_rad) {
-        if (m.velocity.x > 0.01) {
-          m.updatePosition(width - coll_rad, m.position.y);
-          m.updateVelocity((-1)*m.velocity.x, m.velocity.y);
-          m.updatePositionOLD();
-          m.updateVelocityOLD();
-        }
-        else {
-          m.updatePosition(width - coll_rad, m.position.y);
-          m.updateVelocity(0, m.velocity.y);
-          m.updatePositionOLD();
-          m.updateVelocityOLD();
-        }
-      }
-      if (m.position.y < coll_rad) {
-        if (m.velocity.y > 0.01) {
-          m.updatePosition(m.position.x, coll_rad);
-          m.updateVelocity(m.velocity.x, (-1)*m.velocity.y);
-          m.updatePositionOLD();
-          m.updateVelocityOLD();
-        }
-        else {
-          m.updatePosition(m.position.x, coll_rad);
-          m.updateVelocity(m.velocity.x, 0);
-          m.updatePositionOLD();
-          m.updateVelocityOLD();
-        }
-      } 
-      else if (m.position.y > height - coll_rad) {
-        if (m.velocity.y > 0.01) {
-          m.updatePosition(m.position.x, height - coll_rad);
-          m.updateVelocity(m.velocity.x, (-1)*m.velocity.y);
-          m.updatePositionOLD();
-          m.updateVelocityOLD();
-        }
-        else {
-          m.updatePosition(m.position.x, height - coll_rad);
-          m.updateVelocity(m.velocity.x, 0);
-          m.updatePositionOLD();
-          m.updateVelocityOLD();
-        }
+    int iter = 0;
+    
+    while ((boolean(collisionFlag)) && (iter<100)) {
+      iter++;
+      pbFlag = DetectBoundaryCollision();
+      ppFlag = DetectPointPointCollision();
+      peFlag = DetectPointEdgeCollision();
+      
+      collisionFlag = pbFlag + ppFlag + peFlag;
+      
+      if (boolean(collisionFlag)) {
+        // Resolve Collisions
+        ResolveBoundary();
+        ResolvePointPoint();
+        ResolvePointEdge();
+        //collisionFlag = 0;
       }
     }
-  } // end of Boundary collisions
-  
-  
-  // Collision of particles with each other
-  void Mass_collisions() {
-    float clearRad, piMass, pjMass;
-    float Vxi, Vyi, Vxj, Vyj; 
-    Particle pi, pj;
-    
-    for (int i = 0; i < N-1; i++) {
-      pi = LocalMass[i];
-      piMass = LocalMass[i].mass;
-      for (int j = i+1; j < N; j++) {
-        pj = LocalMass[j];
-        pjMass = LocalMass[j].mass;
-        
-        clearRad = (pi.diameter + pj.diameter)/2; 
-        
-        if (pi.position.dist(pj.position)<=clearRad) {
-          
-          Vxi = (pi.velocity.x*(piMass-pjMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*pj.velocity.x;
-          Vyi = (pi.velocity.y*(piMass-pjMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*pj.velocity.y;
-
-          Vxj = (pj.velocity.x*(pjMass-piMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*pi.velocity.x;
-          Vyj = (pj.velocity.y*(pjMass-piMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*pi.velocity.y;
-
-          if ((!pi.fixed) && (!pj.fixed)) {
-            pi.updateVelocity(Vxi, Vyi);
-            pi.position = pi.positionOld.copy();
-            pj.updateVelocity(Vxj, Vyj);
-            pj.position = pj.positionOld.copy();
-          }
-          else if ((pi.fixed) && (!pj.fixed)) {
-            pj.updateVelocity((-1)*pj.velocity.x,(-1)*pj.velocity.y);
-            pj.position = pj.positionOld.copy();
-          }
-          else if ((!pi.fixed) && (pj.fixed)) {
-            pi.updateVelocity((-1)*pi.velocity.x,(-1)*pi.velocity.y);
-            pi.position = pi.positionOld.copy();
-          }
-          
-        } // end if (distance)
-      } // end for (j)
-    } // end for (i)
-    
-  } // end of Mass collisions
-  
+  } // end of SolveCollisions method
   
   
   // Detect Boundary Collisions
-  void DetectBoundaryCollision() {
+  int DetectBoundaryCollision() {
     float clearRad;
+    int col_count = 0;
     
     for (int i=0; i < N; i++) {
       Particle P = LocalMass[i];
       clearRad = P.diameter/2;
       
-      if ((P.position.x < clearRad) || (P.position.x > width - clearRad)) {
-        println("Particle "+i+" colliding with vertical walls.");
-        noLoop();
+      if (P.position.x < clearRad) {
+        col_count += 1;
+        WBoundPointCol.add(P);
       }
-      if ((P.position.y < clearRad) || (P.position.y > height - clearRad)) {
-        println("Particle "+i+" colliding with horizontal walls.");
-        P.CollisionDisplay();
-        noLoop();
+      else if (P.position.x > width - clearRad) {
+        col_count += 1;
+        EBoundPointCol.add(P);
+      }
+      if (P.position.y < clearRad) {
+        col_count += 1;
+        NBoundPointCol.add(P);
+      }
+      else if  (P.position.y > height - clearRad) {
+        col_count += 1;
+        SBoundPointCol.add(P);
       }
     } // end for loop over particles
-
+    
+    return col_count;
   } // end of Detect Boundary Collisions
   
   // Detect Particle-Particle Collisions
-  void DetectPointPointCollision() {
+  int DetectPointPointCollision() {
     float clearRad;
+    int col_count = 0;
     
     for (int i = 0; i < N-1; i++) {
       Particle pi = LocalMass[i];
@@ -227,23 +174,21 @@ class CollisionSolver {
         clearRad = (pi.diameter + pj.diameter)/4;
         
         if (pi.distance2point(pj)<=clearRad) {
-          println("Particle "+i+" is colliding with particle "+j);
-          println(pi.diameter);
-          println(pj.diameter);
-          println(pi.distance2point(pj));
-          pi.CollisionDisplay();
-          pj.CollisionDisplay();
-          noLoop();
+          col_count += 1;
+          PointACol.add(pi);
+          PointBCol.add(pj);
         }
       } // end for loop over particles #2
     } // end for loop over particles #1
+    
+    return col_count;
     
   } // end of Detect Point-Point Collisions
   
   
   // Detect Particle-Spring Collisions
-  void DetectPointEdgeCollision() {
-    float velThreshold = 0.01;
+  int DetectPointEdgeCollision() {
+    int col_count = 0;
     
     for (int i = 0; i<N; i++) {
       Particle p = LocalMass[i];
@@ -274,17 +219,16 @@ class CollisionSolver {
             boolean col;
             col = Point_Edge_Penetration(P0, P1, Q0, Q1, C0, C1);
             if (col) {
-              println("Particle "+i+" is colliding with spring "+j);
-              p.CollisionDisplay();
-              s.CollisionDisplay();
-              noLoop();
+              col_count += 1;
+              PointCol.add(p);
+              SpringCol.add(s);
             }
           }
-          
         } // end if check for particle belonging to the spring
       } // end of loop over springs
     } // end of loop over particles
     
+    return col_count;
   } // end of Detect Point-Edge Collisions
   
   // Detect Point penetrating line segment
@@ -292,6 +236,7 @@ class CollisionSolver {
     
     boolean penetFlag = false;
     float [] T = new float[2];
+    float [] S = new float[2];
     float t, s;
     
     PVector C0P0 = PVector.sub(c0_,p0_);
@@ -319,11 +264,8 @@ class CollisionSolver {
         
         if ((s>=0) && (s<=1)) penetFlag = true;
         else penetFlag = false;
-    
       } // end if 0<t<1
-      
     }
-    
     return penetFlag;
   } // end of point-edge penetration detection method
   
@@ -366,5 +308,125 @@ class CollisionSolver {
     
     return Tf;
   } // end of quadratic solver
+  
+  
+  
+  // Resolve Collisions with Boundaries
+  void ResolveBoundary() {
+    int NBP = NBoundPointCol.size();
+    int SBP = SBoundPointCol.size();
+    int WBP = WBoundPointCol.size();
+    int EBP = EBoundPointCol.size();
+    
+    if (NBP>0) {
+      // Resolve north bound
+      for (int j = 0; j<NBP; j++) {
+        Particle myP = NBoundPointCol.get(j);
+        myP.updatePosition(myP.position.x, myP.diameter);
+        myP.updateVelocity(myP.velocity.x, -myP.velocity.y);
+      }
+      NBoundPointCol = new ArrayList<Particle>();
+    }
+    if (SBP>0) {
+      // Resolve south bound
+      for (int j = 0; j<SBP; j++) {
+        Particle myP = SBoundPointCol.get(j);
+        myP.updatePosition(myP.position.x, height-myP.diameter);
+        myP.updateVelocity(myP.velocity.x, -myP.velocity.y);
+      }
+      SBoundPointCol = new ArrayList<Particle>();
+    }
+    if (WBP>0) {
+      // Resolve west bound
+      for (int j = 0; j<WBP; j++) {
+        Particle myP = WBoundPointCol.get(j);
+        myP.updatePosition(myP.diameter, myP.position.y);
+        myP.updateVelocity(-myP.velocity.x, myP.velocity.y);
+      }
+      WBoundPointCol = new ArrayList<Particle>();
+    }
+    if (EBP>0) {
+      // Resolve east bound
+      for (int j = 0; j<EBP; j++) {
+        Particle myP = EBoundPointCol.get(j);
+        myP.updatePosition(width-myP.diameter, myP.position.y);
+        myP.updateVelocity(-myP.velocity.x, myP.velocity.y);
+      }
+      EBoundPointCol = new ArrayList<Particle>();
+    }
+    
+  } // end of ResolveBoundary method
+  
+  
+  // Resolve Collisions occuring between points
+  void ResolvePointPoint() {
+    int Npp = PointACol.size();
+    float dtRatio = 0.5;
+    
+    if (Npp>0) {
+      // resolve point-point
+      for (int j = 0; j<Npp; j++) {
+        Particle pi = PointACol.get(j);
+        Particle pj = PointBCol.get(j);
+        float piMass = pi.mass;
+        float pjMass = pj.mass;
+        
+        float Vxi = (pi.velocity.x*(piMass-pjMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*pj.velocity.x;
+        float Vyi = (pi.velocity.y*(piMass-pjMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*pj.velocity.y;
+        float xinew = pi.positionOld.x + dtRatio*(pi.position.x-pi.positionOld.x);
+        float yinew = pi.positionOld.y + dtRatio*(pi.position.y-pi.positionOld.y);
+
+        float Vxj = (pj.velocity.x*(pjMass-piMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*pi.velocity.x;
+        float Vyj = (pj.velocity.y*(pjMass-piMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*pi.velocity.y;
+        float xjnew = pj.positionOld.x + dtRatio*(pj.position.x-pj.positionOld.x);
+        float yjnew = pj.positionOld.y + dtRatio*(pj.position.y-pj.positionOld.y);
+        
+        if ((!pi.fixed) && (!pj.fixed)) {
+          pi.updateVelocity(Vxi, Vyi);
+          pj.updateVelocity(Vxj, Vyj);
+          pi.updatePosition(xinew,yinew);
+          pj.updatePosition(xjnew,yjnew);
+        }
+        else if ((pi.fixed) && (!pj.fixed)) {
+          pj.updateVelocity((-1)*pj.velocity.x,(-1)*pj.velocity.y);
+          pj.updatePosition(xjnew,yjnew);
+        }
+        else if ((!pi.fixed) && (pj.fixed)) {
+          pi.updateVelocity((-1)*pi.velocity.x,(-1)*pi.velocity.y);
+          pi.updatePosition(xinew,yinew);
+        }
+      }
+      PointACol = new ArrayList<Particle>();
+      PointBCol = new ArrayList<Particle>();
+    }
+    
+  } // end ResolvePointPoint method
+  
+  
+  // Resolve Collisions between points and edges
+  void ResolvePointEdge() {
+    int Npe = PointCol.size();
+    
+    if (Npe>0) {
+      // resolve point-edge
+      for (int j = 0; j<Npe; j++) {
+        Particle p = PointCol.get(j);
+        Spring s = SpringCol.get(j);
+        
+        if (LR>=0.5) {
+          // update s.p2 and p
+        }
+        else if (LR<0.5) {
+          // update s.p1 and p
+        }
+        
+      }
+      PointCol = new ArrayList<Particle>();
+      SpringCol = new ArrayList<Spring>();
+    }
+    
+    
+  } // end of ResolvePointEdge
+  
   
 } // end of Collision solver class

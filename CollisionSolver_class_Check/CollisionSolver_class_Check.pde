@@ -41,6 +41,7 @@ float xDrive, yDrive, vxDrive, vyDrive;
 //--------------------------- Setup Section ---------------------------//
 void setup() {
   size(800, 600); // window size
+  frameRate(10);
   
   sheet = new FlexibleSheet(L, M, N, stiff, damp, offsetX, offsetY, alignX);
   sheet.prtcl[0].makeFixed();
@@ -105,11 +106,10 @@ void draw() {
   sheet.prtcl[0].updateVelocity(vxDrive, vyDrive);
   
   sheet.Trapezoid(dt, gravity);
-  Collide.DetectPointPointCollision();
-  Collide.DetectPointEdgeCollision();
+  Collide.SolveCollisions();
   
   t += dt;
-  noLoop();
+  //noLoop();
 } // end Draw()
 
 
