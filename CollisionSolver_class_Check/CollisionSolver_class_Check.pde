@@ -1,8 +1,6 @@
 /*******************************************************************
 // Testing CollisionSolver Class  //
-// The Slinky drop test is performed checking that the sheet is able to collapse on 
-// itself without the particles going through one another. Moreover, boundary collisions
-// are expected to be identified and resolved properly.
+// Test Detecting collision between particles.
 // - 
 *******************************************************************/
 
@@ -23,6 +21,9 @@ float t;
 float dt;
 //int Nfil = 2; // number of sheets to create (if needed)
 
+float Amp = 15; // amplitude of forcing on leading edge
+float freq = 0.3; // frequency of forcing
+
 //--------------------- END of INPUTS Section ---------------------------//
 FlexibleSheet sheet, sheet2;
 //FlexibleSheet [] sheet;
@@ -35,6 +36,8 @@ PrintWriter outputVelOLD; // declare output file for velocities
 PrintWriter outputForce; // declare output file for forces
 PrintWriter outputEnergy; // declare output file for positions
 
+float xDrive, yDrive, vxDrive, vyDrive;
+
 //--------------------------- Setup Section ---------------------------//
 void setup() {
   size(800, 600); // window size
@@ -42,7 +45,7 @@ void setup() {
   sheet = new FlexibleSheet(L, M, N, stiff, damp, offsetX, offsetY, alignX);
   sheet.prtcl[0].makeFixed();
   
-  //sheet.Calculate_Stretched_Positions(gravity);
+  sheet.Calculate_Stretched_Positions(gravity);
   
   Collide = new CollisionSolver(sheet);
   
@@ -92,15 +95,21 @@ void draw() {
   Write_Info();
   
   // Update
-  //sheet2.RungeKutta4(dt, gravity);
-  sheet.Trapezoid(dt, gravity);
-  Collide.Boundary_collisions();
-  Collide.Mass_collisions();
+  xDrive = Amp * sin(2*PI*freq*t) + offsetX; // guide the leading edge particle
+  yDrive = offsetY;
+  vxDrive = 2*PI*freq*Amp * cos(2*PI*freq*t);
+  vyDrive = 0.0;
+  sheet.prtcl[0].updatePositionOLD();
+  sheet.prtcl[0].updateVelocityOLD();
+  sheet.prtcl[0].updatePosition(xDrive, yDrive);
+  sheet.prtcl[0].updateVelocity(vxDrive, vyDrive);
   
-  if (t>3) sheet.prtcl[0].makeFree(); // release the top at t=3+
+  sheet.Trapezoid(dt, gravity);
+  //Collide.DetectPointPointCollision();
+  Collide.DetectPointEdgeCollision();
   
   t += dt;
-  //noLoop();
+  noLoop();
 } // end Draw()
 
 

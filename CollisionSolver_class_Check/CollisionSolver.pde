@@ -191,4 +191,177 @@ class CollisionSolver {
     
   } // end of Mass collisions
   
+  
+  
+  // Detect Boundary Collisions
+  void DetectBoundaryCollision() {
+    float clearRad;
+    
+    for (int i=0; i < N; i++) {
+      Particle P = LocalMass[i];
+      clearRad = P.diameter/2;
+      
+      if ((P.position.x < clearRad) || (P.position.x > width - clearRad)) {
+        println("Particle "+i+" colliding with vertical walls.");
+        noLoop();
+      }
+      if ((P.position.y < clearRad) || (P.position.y > height - clearRad)) {
+        println("Particle "+i+" colliding with horizontal walls.");
+        P.CollisionDisplay();
+        noLoop();
+      }
+    } // end for loop over particles
+
+  } // end of Detect Boundary Collisions
+  
+  // Detect Particle-Particle Collisions
+  void DetectPointPointCollision() {
+    float clearRad;
+    
+    for (int i = 0; i < N-1; i++) {
+      Particle pi = LocalMass[i];
+      
+      for (int j = i+1; j < N; j++) {
+        Particle pj = LocalMass[j];
+        
+        clearRad = (pi.diameter + pj.diameter)/2;
+        
+        if (pi.distance2point(pj)<=clearRad) {
+          println("Particle "+i+" is colliding with particle "+j);
+          pi.CollisionDisplay();
+          pj.CollisionDisplay();
+          noLoop();
+        }
+      } // end for loop over particles #2
+    } // end for loop over particles #1
+    
+  } // end of Detect Point-Point Collisions
+  
+  
+  // Detect Particle-Spring Collisions
+  void DetectPointEdgeCollision() {
+    float velThreshold = 0.01;
+    
+    for (int i = 0; i<N; i++) {
+      Particle p = LocalMass[i];
+      for (int j=0; j<Ns; j++) {
+        Spring s = LocalSpring[j];
+        
+        // continue only if the particle is not connected to the current spring
+        if ((p!=s.p1) && (p!=s.p2)) {
+          PVector C0 = p.positionOld.copy();
+          PVector C1 = p.position.copy();
+          
+          PVector P0 = s.p1.positionOld.copy();
+          PVector P1 = s.p1.position.copy();
+          
+          PVector Q0 = s.p2.positionOld.copy();
+          PVector Q1 = s.p2.position.copy();
+          
+          PVector C0P0 = PVector.sub(C0,P0);
+          PVector C0Q0 = PVector.sub(C0,Q0);
+          
+          PVector C1P1 = PVector.sub(C1,P1);
+          PVector C1Q1 = PVector.sub(C1,Q1);
+          
+          PVector crossOld = C0P0.cross(C0Q0);
+          PVector crossNew = C1P1.cross(C1Q1);
+          
+          if (crossOld.z*crossNew.z<0) {
+            boolean col;
+            col = Point_Edge_Penetration(P0, P1, Q0, Q1, C0, C1);
+            if (col) {
+              println("Particle "+i+" is colliding with spring "+j);
+              p.CollisionDisplay();
+              s.CollisionDisplay();
+              noLoop();
+            }
+          }
+          
+        } // end if check for particle belonging to the spring
+      } // end of loop over springs
+    } // end of loop over particles
+    
+  } // end of Detect Point-Edge Collisions
+  
+  // Detect Point penetrating line segment
+  boolean Point_Edge_Penetration(PVector p0_, PVector p1_, PVector q0_, PVector q1_, PVector c0_, PVector c1_) {
+    
+    boolean penetFlag = false;
+    float [] T = new float[2];
+    float t, s;
+    
+    PVector C0P0 = PVector.sub(c0_,p0_);
+    PVector Q0P0 = PVector.sub(q0_,p0_);
+    
+    PVector C1C0P1P0 = PVector.sub(PVector.add(c1_,p0_),PVector.add(c0_,p1_));
+    PVector Q1Q0P1P0 = PVector.sub(PVector.add(q1_,p0_),PVector.add(q0_,p1_));
+    
+    PVector A0 = C1C0P1P0.cross(Q1Q0P1P0);
+    PVector A11 = C1C0P1P0.cross(Q0P0);
+    PVector A12 = C0P0.cross(Q1Q0P1P0);
+    PVector A1 = PVector.add(A11,A12);
+    PVector A2 = C1C0P1P0.cross(Q1Q0P1P0);
+    
+    T = SolveQuadratic(A2.z,A1.z,A0.z);
+    
+    for (int ii=0; ii<2; ii++) {
+      t = T[ii];
+      if ((t>=0) && (t<=1)) {
+        PVector pt = PVector.add(p0_,PVector.mult(PVector.sub(p1_,p0_),t));
+        PVector qt = PVector.add(q0_,PVector.mult(PVector.sub(q1_,q0_),t));
+        PVector ct = PVector.add(c0_,PVector.mult(PVector.sub(c1_,c0_),t));
+        
+        s = PVector.dot(PVector.sub(ct,pt),PVector.sub(qt,pt))/PVector.dot(PVector.sub(qt,pt),PVector.sub(qt,pt));
+        
+        if ((s>=0) && (s<=1)) penetFlag = true;
+        else penetFlag = false;
+    
+      } // end if 0<t<1
+      
+    }
+    
+    return penetFlag;
+  } // end of point-edge penetration detection method
+  
+  
+  // Solve Quadratic equation given the coefficients
+  float [] SolveQuadratic(float a, float b, float c) {
+    
+    float [] Tf = new float[2]; 
+    
+    float d = sq(b) - 4*a*c;
+    
+    if ((a==0) && (b!=0)) {
+      Tf[0] = -c/b;
+      Tf[1] = -c/b;
+    }
+    else if ((a==0) && (b==0)) {
+      Tf[0] = 0.0;
+      Tf[1] = 0.0;
+    }
+    else {
+      if (d<0) {
+        Tf[0] = -999;
+        Tf[1] = -999;
+      }
+      else if (d==0) {
+        Tf[0] = -b/(2*a);
+        Tf[1] = -b/(2*a);
+      }
+      else {
+        Tf[0] = (-b+sqrt(d))/(2*a);
+        Tf[1] = (-b-sqrt(d))/(2*a);
+      }
+    }
+    
+    if (Tf[0]>Tf[1]) {
+      float temp = Tf[0];
+      Tf[0] = Tf[1];
+      Tf[1] = temp;
+    }
+    
+    return Tf;
+  } // end of quadratic solver
+  
 } // end of Collision solver class

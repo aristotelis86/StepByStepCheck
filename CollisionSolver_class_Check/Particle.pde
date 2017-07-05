@@ -64,6 +64,17 @@ class Particle {
     ellipse(position.x, position.y, diameter, diameter);
   }
   
+  // Display particle into collision
+  void CollisionDisplay() {
+    noStroke();
+    fill(255, 0, 230);
+    ellipse(positionOld.x, positionOld.y, diameter, diameter);
+    
+    noStroke();
+    fill(255, 0, 0);
+    ellipse(position.x, position.y, diameter, diameter);
+  }
+  
   // Make the particle free of constraints
   void makeFree() {
     fixed = false;

@@ -29,6 +29,13 @@ class Spring {
     line(p1.position.x, p1.position.y, p2.position.x, p2.position.y);
   }
   
+  // Display when into collision
+  void CollisionDisplay(){
+    strokeWeight(1);
+    stroke(255, 0, 0);
+    line(p1.position.x, p1.position.y, p2.position.x, p2.position.y);
+  }
+  
   // Apply Forces on connected particles
   void applyAllForces() {
     // apply force due to spring

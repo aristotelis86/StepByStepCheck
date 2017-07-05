@@ -176,7 +176,7 @@ class FlexibleSheet {
     }
     
     dt = -2*ReLam/(sq(ReLam)+sq(ImLam));
-    println("dt is :"+dt);
+    dt = dt - dt/100;
     return dt;
   }
   
@@ -310,8 +310,10 @@ class FlexibleSheet {
     for (int i = 0; i < N; i++) {
       OldPosition[i] = prtcl[i].position.copy();
       OldVelocity[i] = prtcl[i].velocity.copy();
-      prtcl[i].updatePositionOLD();
-      prtcl[i].updateVelocityOLD();
+      if (!prtcl[i].fixed) {
+        prtcl[i].updatePositionOLD();
+        prtcl[i].updateVelocityOLD();
+      }
     }
     
     // Apply Forces for this step
