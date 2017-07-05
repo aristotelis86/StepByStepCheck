@@ -1,6 +1,6 @@
 /*******************************************************************
 // Testing CollisionSolver Class  //
-// Test Detecting collision between particles.
+// Test Detecting collision between particles and particle-spring.
 // - 
 *******************************************************************/
 
@@ -105,7 +105,7 @@ void draw() {
   sheet.prtcl[0].updateVelocity(vxDrive, vyDrive);
   
   sheet.Trapezoid(dt, gravity);
-  //Collide.DetectPointPointCollision();
+  Collide.DetectPointPointCollision();
   Collide.DetectPointEdgeCollision();
   
   t += dt;

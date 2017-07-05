@@ -224,10 +224,13 @@ class CollisionSolver {
       for (int j = i+1; j < N; j++) {
         Particle pj = LocalMass[j];
         
-        clearRad = (pi.diameter + pj.diameter)/2;
+        clearRad = (pi.diameter + pj.diameter)/4;
         
         if (pi.distance2point(pj)<=clearRad) {
           println("Particle "+i+" is colliding with particle "+j);
+          println(pi.diameter);
+          println(pj.diameter);
+          println(pi.distance2point(pj));
           pi.CollisionDisplay();
           pj.CollisionDisplay();
           noLoop();
