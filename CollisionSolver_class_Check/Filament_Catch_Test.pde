@@ -6,14 +6,22 @@
 
 
 ////--------------------- INPUTS Section ---------------------------//
-//float L = 100; // total (unstretched) length of sheet
-//float M = 6; // total mass of sheet
-//int N = 6; // number of control points used to represent the sheet
-//float stiff = 100; // stiffness of each spring in the sheet (overall stiffness = value given/N)
-//boolean damp = true; // flag to include damping in the simulation (numerical reasons mostly)
-//boolean alignX = false; // should it be aligned with x-axis
+//float L1 = 100; // total (unstretched) length of sheet
+//float M1 = 6; // total mass of sheet
+//int N1 = 6; // number of control points used to represent the sheet
+//float stiff1 = 100; // stiffness of each spring in the sheet (overall stiffness = value given/N)
+//boolean damp1 = true; // flag to include damping in the simulation (numerical reasons mostly)
+//boolean alignX1 = false; // should it be aligned with x-axis
+//float offsetX1 = 400, offsetY1 = 30; // position of leading point
 
-//float offsetX = 400, offsetY = 30; // position of leading point
+//float L2 = 300; // total (unstretched) length of sheet
+//float M2 = 60; // total mass of sheet
+//int N2 = 31; // number of control points used to represent the sheet
+//float stiff2 = 2000; // stiffness of each spring in the sheet (overall stiffness = value given/N)
+//boolean damp2 = true; // flag to include damping in the simulation (numerical reasons mostly)
+//boolean alignX2 = true; // should it be aligned with x-axis
+//float offsetX2 = 325, offsetY2 = 400; // position of leading point
+
 
 //PVector gravity = new PVector(0,10);
 
@@ -21,12 +29,9 @@
 //float dt;
 ////int Nfil = 2; // number of sheets to create (if needed)
 
-//float Amp = 15; // amplitude of forcing on leading edge
-//float freq = 0.3; // frequency of forcing
-
 ////--------------------- END of INPUTS Section ---------------------------//
-//FlexibleSheet sheet, sheet2;
-////FlexibleSheet [] sheet;
+////FlexibleSheet sheet, sheet2;
+//FlexibleSheet [] sheet;
 //CollisionSolver Collide;
 
 //PrintWriter outputPos; // declare output file for positions
@@ -43,39 +48,55 @@
 //  size(800, 600); // window size
 //  frameRate(10);
   
-//  sheet = new FlexibleSheet(L, M, N, stiff, damp, offsetX, offsetY, alignX);
-//  sheet.prtcl[0].makeFixed();
+//  sheet = new FlexibleSheet[2]; 
   
-//  sheet.Calculate_Stretched_Positions(gravity);
+//  sheet[0] = new FlexibleSheet(L1, M1, N1, stiff1, damp1, offsetX1, offsetY1, alignX1);
+//  sheet[0].prtcl[0].makeFixed();
+//  sheet[0].Calculate_Stretched_Positions(gravity);
+  
+//  sheet[1] = new FlexibleSheet(L2, M2, N2, stiff2, damp2, offsetX2, offsetY2, alignX2);
+//  sheet[1].prtcl[0].makeFixed();
+//  sheet[1].prtcl[N2-1].makeFixed();
   
 //  Collide = new CollisionSolver(sheet);
   
-//  dt = sheet.Determine_time_step();
-//  float Damp = sheet.damping;
+//  float dt1 = sheet[0].Determine_time_step();
+//  float dt2 = sheet[1].Determine_time_step();
+  
+//  println(dt1);
+//  println(dt2);
+  
+//  if (dt1<dt2) dt = dt1;
+//  else dt=dt2;
+  
+//  println(dt);
+  
+//  float Damp1 = sheet[0].damping;
+//  //float Damp2 = sheet[1].damping;
   
 //  outputPos = createWriter("positions.txt");
 //  outputPos.println("=========== Positions ==========");
-//  outputPos.println("Length: "+L+" Mass: "+M+" Points: "+N+" Stiffness: "+stiff+" Damping: "+Damp);
+//  outputPos.println("Length: "+L1+" Mass: "+M1+" Points: "+N1+" Stiffness: "+stiff1+" Damping: "+Damp1+" dt: "+dt);
   
 //  outputVel = createWriter("velocities.txt");
 //  outputVel.println("=========== Velocities ==========");
-//  outputVel.println("Length: "+L+" Mass: "+M+" Points: "+N+" Stiffness: "+stiff+" Damping: "+Damp);
+//  outputVel.println("Length: "+L1+" Mass: "+M1+" Points: "+N1+" Stiffness: "+stiff1+" Damping: "+Damp1+" dt: "+dt);
   
 //  outputPosOLD = createWriter("positionsOLD.txt");
 //  outputPosOLD.println("=========== Positions Old ==========");
-//  outputPosOLD.println("Length: "+L+" Mass: "+M+" Points: "+N+" Stiffness: "+stiff+" Damping: "+Damp);
+//  outputPosOLD.println("Length: "+L1+" Mass: "+M1+" Points: "+N1+" Stiffness: "+stiff1+" Damping: "+Damp1+" dt: "+dt);
   
 //  outputVelOLD = createWriter("velocitiesOLD.txt");
 //  outputVelOLD.println("=========== Velocities Old ==========");
-//  outputVelOLD.println("Length: "+L+" Mass: "+M+" Points: "+N+" Stiffness: "+stiff+" Damping: "+Damp);
+//  outputVelOLD.println("Length: "+L1+" Mass: "+M1+" Points: "+N1+" Stiffness: "+stiff1+" Damping: "+Damp1+" dt: "+dt);
   
 //  outputForce = createWriter("forces.txt");
 //  outputForce.println("=========== Forces ==========");
-//  outputForce.println("Length: "+L+" Mass: "+M+" Points: "+N+" Stiffness: "+stiff+" Damping: "+Damp);
+//  outputForce.println("Length: "+L1+" Mass: "+M1+" Points: "+N1+" Stiffness: "+stiff1+" Damping: "+Damp1+" dt: "+dt);
   
 //  outputEnergy = createWriter("energy.txt");
 //  outputEnergy.println("=========== Energy ==========");
-//  outputEnergy.println("Length: "+L+" Mass: "+M+" Points: "+N+" Stiffness: "+stiff+" Damping: "+Damp);
+//  outputEnergy.println("Length: "+L1+" Mass: "+M1+" Points: "+N1+" Stiffness: "+stiff1+" Damping: "+Damp1+" dt: "+dt);
   
 //} // end of setup
 
@@ -88,25 +109,17 @@
 //  text(t, 10, 30); // position of timer
   
 //  // Display
-//  sheet.display();
-//  //sheet2.display();
+//  for (FlexibleSheet FS : sheet) FS.display();
   
 //  // Write info
-//  sheet.calculate_Energy(gravity, height);
+//  sheet[0].calculate_Energy(gravity, height);
 //  Write_Info();
   
 //  // Update
-//  xDrive = Amp * sin(2*PI*freq*t) + offsetX; // guide the leading edge particle
-//  yDrive = offsetY;
-//  vxDrive = 2*PI*freq*Amp * cos(2*PI*freq*t);
-//  vyDrive = 0.0;
-//  sheet.prtcl[0].updatePositionOLD();
-//  sheet.prtcl[0].updateVelocityOLD();
-//  sheet.prtcl[0].updatePosition(xDrive, yDrive);
-//  sheet.prtcl[0].updateVelocity(vxDrive, vyDrive);
-  
-//  sheet.Trapezoid(dt, gravity);
+//  for (FlexibleSheet FS : sheet) FS.Trapezoid(dt, gravity);
 //  Collide.SolveCollisions();
+  
+//  if (t>3) sheet[0].prtcl[0].makeFree();
   
 //  t += dt;
 //  //noLoop();
@@ -133,8 +146,8 @@
 //  outputEnergy.println("============= t = "+t+" ================");
   
   
-//  outputEnergy.println(sheet.Energy);
-//  for (Particle PP : sheet.prtcl) {
+//  outputEnergy.println(sheet[0].Energy);
+//  for (Particle PP : sheet[0].prtcl) {
 //    outputPos.println(PP.position.x + " " + PP.position.y);
 //    outputVel.println(PP.velocity.x + " " + PP.velocity.y);
 //    outputPosOLD.println(PP.positionOld.x + " " + PP.positionOld.y);

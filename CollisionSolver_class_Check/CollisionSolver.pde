@@ -25,6 +25,11 @@ class CollisionSolver {
   
   ArrayList<Particle> PointCol; // For point-edge collisions
   ArrayList<Spring> SpringCol;  // For point-edge collisions
+  FloatList TimeCol;            // For point-edge collisions
+  FloatList LenCol;             // For point-edge collisions
+  float [] TR = new float[2];   // For point-edge collisions store time
+  float [] LR = new float[2];   // For point-edge collisions store location
+  int idx; // For point-edge collisions store index 
   
   
   //================ Constructor ================//
@@ -50,6 +55,8 @@ class CollisionSolver {
     
     PointCol = new ArrayList<Particle>();
     SpringCol = new ArrayList<Spring>();
+    TimeCol = new FloatList();
+    LenCol = new FloatList();
         
   } // end of constructor #1
   
@@ -96,6 +103,8 @@ class CollisionSolver {
     
     PointCol = new ArrayList<Particle>();
     SpringCol = new ArrayList<Spring>();
+    TimeCol = new FloatList();
+    LenCol = new FloatList();
     
   } // end of constructor #2
   
@@ -222,6 +231,8 @@ class CollisionSolver {
               col_count += 1;
               PointCol.add(p);
               SpringCol.add(s);
+              TimeCol.append(TR[idx]);
+              LenCol.append(LR[idx]);
             }
           }
         } // end if check for particle belonging to the spring
@@ -235,8 +246,6 @@ class CollisionSolver {
   boolean Point_Edge_Penetration(PVector p0_, PVector p1_, PVector q0_, PVector q1_, PVector c0_, PVector c1_) {
     
     boolean penetFlag = false;
-    float [] T = new float[2];
-    float [] S = new float[2];
     float t, s;
     
     PVector C0P0 = PVector.sub(c0_,p0_);
@@ -251,10 +260,10 @@ class CollisionSolver {
     PVector A1 = PVector.add(A11,A12);
     PVector A2 = C1C0P1P0.cross(Q1Q0P1P0);
     
-    T = SolveQuadratic(A2.z,A1.z,A0.z);
+    TR = SolveQuadratic(A2.z,A1.z,A0.z);
     
     for (int ii=0; ii<2; ii++) {
-      t = T[ii];
+      t = TR[ii];
       
       PVector pt = PVector.add(p0_,PVector.mult(PVector.sub(p1_,p0_),t));
       PVector qt = PVector.add(q0_,PVector.mult(PVector.sub(q1_,q0_),t));
@@ -262,15 +271,19 @@ class CollisionSolver {
       
       s = PVector.dot(PVector.sub(ct,pt),PVector.sub(qt,pt))/PVector.dot(PVector.sub(qt,pt),PVector.sub(qt,pt));
       
-      S[ii] = s;
+      LR[ii] = s;
     } // end for loop over time step ratios
     
-    for (int ii=0; ii<2; ii++) {
-      t = T[ii];
-      s = S[ii];
-      
-      
+    if (((TR[0]>=0) && (LR[0]>=0)) && ((TR[0]<=1) && (LR[0]<=1))) {
+      penetFlag = true;
+      idx = 0;
     }
+    else if (((TR[1]>=0) && (LR[1]>=0)) && ((TR[1]<=1) && (LR[1]<=1))) {
+      penetFlag = true;
+      idx = 1;
+    }
+    else penetFlag = false;
+    
     return penetFlag;
   } // end of point-edge penetration detection method
   
@@ -411,23 +424,83 @@ class CollisionSolver {
   // Resolve Collisions between points and edges
   void ResolvePointEdge() {
     int Npe = PointCol.size();
+    float t, l, dtRatio;
+    float tol = 0.1;
     
     if (Npe>0) {
       // resolve point-edge
       for (int j = 0; j<Npe; j++) {
         Particle p = PointCol.get(j);
         Spring s = SpringCol.get(j);
+        t = TimeCol.get(j);
+        l = LenCol.get(j);
+        dtRatio = t-tol*t;
         
-        if (LR>=0.5) {
+        if (l>=0.5) {
           // update s.p2 and p
+          float piMass = p.mass;
+          float pjMass = s.p2.mass;
+          
+          float Vxi = (p.velocity.x*(piMass-pjMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*s.p2.velocity.x;
+          float Vyi = (p.velocity.y*(piMass-pjMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*s.p2.velocity.y;
+          float xinew = p.positionOld.x + dtRatio*(p.position.x-p.positionOld.x);
+          float yinew = p.positionOld.y + dtRatio*(p.position.y-p.positionOld.y);
+  
+          float Vxj = (s.p2.velocity.x*(pjMass-piMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*p.velocity.x;
+          float Vyj = (s.p2.velocity.y*(pjMass-piMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*p.velocity.y;
+          float xjnew = s.p2.positionOld.x + dtRatio*(s.p2.position.x-s.p2.positionOld.x);
+          float yjnew = s.p2.positionOld.y + dtRatio*(s.p2.position.y-s.p2.positionOld.y);
+          
+          if ((!p.fixed) && (!s.p2.fixed)) {
+            p.updateVelocity(Vxi, Vyi);
+            s.p2.updateVelocity(Vxj, Vyj);
+            p.updatePosition(xinew,yinew);
+            s.p2.updatePosition(xjnew,yjnew);
+          }
+          else if ((p.fixed) && (!s.p2.fixed)) {
+            s.p2.updateVelocity((-1)*s.p2.velocity.x,(-1)*s.p2.velocity.y);
+            s.p2.updatePosition(xjnew,yjnew);
+          }
+          else if ((!p.fixed) && (s.p2.fixed)) {
+            p.updateVelocity((-1)*p.velocity.x,(-1)*p.velocity.y);
+            p.updatePosition(xinew,yinew);
+          }
         }
-        else if (LR<0.5) {
+        else if (l<0.5) {
           // update s.p1 and p
+          float piMass = p.mass;
+          float pjMass = s.p1.mass;
+          
+          float Vxi = (p.velocity.x*(piMass-pjMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*s.p1.velocity.x;
+          float Vyi = (p.velocity.y*(piMass-pjMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*s.p1.velocity.y;
+          float xinew = p.positionOld.x + dtRatio*(p.position.x-p.positionOld.x);
+          float yinew = p.positionOld.y + dtRatio*(p.position.y-p.positionOld.y);
+  
+          float Vxj = (s.p1.velocity.x*(pjMass-piMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*p.velocity.x;
+          float Vyj = (s.p1.velocity.y*(pjMass-piMass)/(piMass+pjMass)) + (2*pjMass/(piMass+pjMass))*p.velocity.y;
+          float xjnew = s.p1.positionOld.x + dtRatio*(s.p1.position.x-s.p1.positionOld.x);
+          float yjnew = s.p1.positionOld.y + dtRatio*(s.p1.position.y-s.p1.positionOld.y);
+          
+          if ((!p.fixed) && (!s.p1.fixed)) {
+            p.updateVelocity(Vxi, Vyi);
+            s.p1.updateVelocity(Vxj, Vyj);
+            p.updatePosition(xinew,yinew);
+            s.p1.updatePosition(xjnew,yjnew);
+          }
+          else if ((p.fixed) && (!s.p1.fixed)) {
+            s.p1.updateVelocity((-1)*s.p1.velocity.x,(-1)*s.p1.velocity.y);
+            s.p1.updatePosition(xjnew,yjnew);
+          }
+          else if ((!p.fixed) && (s.p1.fixed)) {
+            p.updateVelocity((-1)*p.velocity.x,(-1)*p.velocity.y);
+            p.updatePosition(xinew,yinew);
+          }
         }
-        
       }
       PointCol = new ArrayList<Particle>();
       SpringCol = new ArrayList<Spring>();
+      TimeCol = new FloatList();
+      LenCol = new FloatList();
     }
     
     

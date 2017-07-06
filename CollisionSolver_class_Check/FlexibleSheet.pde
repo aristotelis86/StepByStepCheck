@@ -209,7 +209,7 @@ class FlexibleSheet {
   
   // Get the stretch ratio of the entire sheet (must be in a straight line though)
   float getStretchRatio() {
-    PVector FilLength = PVector.sub(prtcl[0].position, prtcl[N-1].position);
+    PVector FilLength = PVector.sub(prtcl[0].position, prtcl[numOfpoints-1].position);
     float newLength = FilLength.mag();
     float stretchRatio = (newLength-Length)/Length;
     return stretchRatio;
