@@ -255,16 +255,21 @@ class CollisionSolver {
     
     for (int ii=0; ii<2; ii++) {
       t = T[ii];
-      if ((t>=0) && (t<=1)) {
-        PVector pt = PVector.add(p0_,PVector.mult(PVector.sub(p1_,p0_),t));
-        PVector qt = PVector.add(q0_,PVector.mult(PVector.sub(q1_,q0_),t));
-        PVector ct = PVector.add(c0_,PVector.mult(PVector.sub(c1_,c0_),t));
-        
-        s = PVector.dot(PVector.sub(ct,pt),PVector.sub(qt,pt))/PVector.dot(PVector.sub(qt,pt),PVector.sub(qt,pt));
-        
-        if ((s>=0) && (s<=1)) penetFlag = true;
-        else penetFlag = false;
-      } // end if 0<t<1
+      
+      PVector pt = PVector.add(p0_,PVector.mult(PVector.sub(p1_,p0_),t));
+      PVector qt = PVector.add(q0_,PVector.mult(PVector.sub(q1_,q0_),t));
+      PVector ct = PVector.add(c0_,PVector.mult(PVector.sub(c1_,c0_),t));
+      
+      s = PVector.dot(PVector.sub(ct,pt),PVector.sub(qt,pt))/PVector.dot(PVector.sub(qt,pt),PVector.sub(qt,pt));
+      
+      S[ii] = s;
+    } // end for loop over time step ratios
+    
+    for (int ii=0; ii<2; ii++) {
+      t = T[ii];
+      s = S[ii];
+      
+      
     }
     return penetFlag;
   } // end of point-edge penetration detection method
